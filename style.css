@@ -1,7 +1,112 @@
 :root {
     font-family: sans-serif;
+
+    --Dark-Grey: #121212;
+    --White-8dp: #FFFFFF14;
+    --White-16dp: #FFFFFF29;
+    --White-24dp: #FFFFFF3D;
+    --White-32dp: #FFFFFF52;
+    --White-40dp: #FFFFFF66;
+
+    --Light-Purple: #BB86FC;
+    --Light-Purple-Transparent: #BB86FC66;
+    --Light-Orange: #F2964B;
+    --Error-Red: #F75E3B;
+
+    background-color: var(--Dark-Grey);
+    color: white;
 }
 
-.selected {
-    outline: 1px solid red;
+body {
+    margin: 0px;
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.game-over {
+    color: var(--Error-Red);
+    font-size: 12rem;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+#room {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+}
+
+#player > p {
+    color: var(--Error-Red);
+    text-align: center;
+}
+
+#player > div {
+    display: flex;
+}
+
+#player button {
+    border: none;
+    background-color: var(--White-24dp);
+    color: white;
+
+    height: 3rem;
+    min-width: 4rem;
+    max-width: 6rem;
+
+    box-sizing: border-box;
+
+    transition: background-color 200ms ease-in-out;
+
+    &:hover {
+        background-color: var(--White-16dp);
+    }
+
+    &:disabled {
+        background-color: var(--White-8dp);
+    }
+}
+
+.card {
+    height: auto;
+    width: 5rem;
+
+    border-radius: .3rem;
+
+    transition: outline 130ms ease-in-out;
+
+    &:hover {
+        outline: 3px solid var(--Light-Purple);
+    }
+}
+
+.card.selected {
+    outline: 5px solid var(--Light-Purple);
+}
+
+@media screen and (min-width: 640px) {
+    #room {
+        width: 60%;
+        justify-content: center;
+    }
+
+    .card {
+        width: 8rem;
+        margin: 0 1rem;
+    }
+
+    #player {
+        width: 60%;
+        & > div {
+            justify-content: space-around;
+        }
+    }
 }

@@ -41,6 +41,21 @@ class Card {
         }
     }
 
+    rankNumber = () => {
+        switch (this.rank) {
+            case "A":
+                return 14;
+            case "K":
+                return 13;
+            case "Q":
+                return 12;
+            case "J":
+                return 11;
+            default:
+                return parseInt(this.rank);
+        }
+    }
+
     toString = () => {
         return `${this.verboseRank()} of ${this.suit}`;
     }
@@ -82,6 +97,13 @@ class Deck {
     print = () => this.cards.forEach((c, i) => console.log(`Card ${i + 1}: ${c.toString()}`))
 }
 
+class Weapon {
+    constructor(card) {
+        this.rank = card.rankNumber();
+        this.lowestKill = 15;
+    }
+}
+
 class Room {
     constructor(fightW, fightB, equip, drink, run) {
         this.deck = new Deck();
@@ -91,6 +113,8 @@ class Room {
         this.cards = [];
         this.selectedCard = null;
 
+        this.weapon = null;
+
         this.fightW = fightW;
         this.fightB = fightB;
         this.equip = equip;
@@ -98,7 +122,12 @@ class Room {
         this.runbutton = run;
 
         this.ranFromLast = false;
+        this.drankPotionThisRoom = false;
 
+        this.fightB.addEventListener('click', this.fightBare);
+        this.fightW.addEventListener('click', this.fightWeapon);
+        this.drink.addEventListener('click', this.drinkPotion);
+        this.equip.addEventListener('click', this.equipWeapon);
         this.runbutton.addEventListener('click', this.run);
 
         this.fightW.disabled = true;
@@ -111,7 +140,23 @@ class Room {
         while (this.cards.length < 4) {
             this.cards.push(this.deck.drawCard());
         }
+        this.drankPotionThisRoom = false;
         this.renderRoom();
+        $("h2 > span").innerText = this.deck.cards.length;
+    }
+
+    removeCard = () => {
+        [this.cards[0], this.cards[this.selectedCard]] = [this.cards[this.selectedCard], this.cards[0]];
+        this.selectedCard = null;
+        const card = this.cards.shift();
+        this.renderRoom();
+        if (this.cards.length < 2)
+            this.drawFullRoom();
+
+        if ((!this.cards.some(card => card.suit != "Hearts")) && this.drankPotionThisRoom)
+            this.drawFullRoom();
+
+        return card;
     }
 
     renderRoom = () => {
@@ -143,9 +188,39 @@ class Room {
         this.runbutton.disabled = false;
     };
 
+    fightBare = () => {
+        modifyHealth(this.cards[this.selectedCard].rankNumber() * -1);
+        this.removeCard();
+    }
+
+    fightWeapon = () => {
+        const enemy = this.removeCard();
+        const enemyDamage = enemy.rankNumber() * -1;
+        modifyHealth(enemyDamage + this.weapon.rank < 0 ? enemyDamage + this.weapon.rank : 0);
+        this.weapon.lowestKill = enemy.rankNumber();
+        $("#lowest-kill").src = enemy.link;
+    }
+
+    drinkPotion = () => {
+        modifyHealth(this.cards[this.selectedCard].rankNumber());
+        this.removeCard();
+        this.drankPotionThisRoom = true;
+    }
+
+    equipWeapon = () => {
+        const weaponCard = this.removeCard();
+        this.weapon = new Weapon(weaponCard);
+        const img = $("#weapon");
+        img.src = weaponCard.link;
+
+        $("#lowest-kill").src = "";
+    }
+
     run = () => {
-        
-        this.drawFullRoom()
+        this.cards.forEach(card => this.deck.bottomCard(card));
+        this.cards = [];
+
+        this.drawFullRoom();
         this.ranFromLast = true;
         this.runbutton.disabled = true;
     };
@@ -157,10 +232,13 @@ class Room {
         this.equip.disabled = true;
         if (card.suit == "Spades" || card.suit == "Clubs") {
             this.fightB.disabled = false;
-            // Weapon logic
+            if (this.weapon != null) {
+                if (this.weapon.lowestKill > card.rankNumber())
+                    this.fightW.disabled = false;
+            }
         } else if (card.suit == "Diamonds") {
             this.equip.disabled = false;
-        } else if (card.suit == "Hearts") {
+        } else if (card.suit == "Hearts" && !this.drankPotionThisRoom) {
             this.drink.disabled = false;
         }
     }
@@ -173,9 +251,14 @@ const modifyHealth = value => {
 
     if (health > 20)
         health = 20
-    else if (health < 0) {
+    else if (health <= 0) {
         health = 0;
+
+        $("main").innerHTML = `<h1 class="game-over">Game Over</h1><button class="restart">Restart</button>`;
+        $(".restart").addEventListener('click', () => location.reload());
     }
+
+    $("#hp").innerText = health;
 }
 
 const main = () => {
