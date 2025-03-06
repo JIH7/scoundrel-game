@@ -83,13 +83,33 @@ class Deck {
 }
 
 class Room {
-    constructor() {
+    constructor(fightW, fightB, equip, drink, run) {
+        this.deck = new Deck();
+        this.deck.filterForScoundrel();
+        this.deck.shuffle();
+
         this.cards = [];
+        this.selectedCard = null;
+
+        this.fightW = fightW;
+        this.fightB = fightB;
+        this.equip = equip;
+        this.drink = drink;
+        this.runbutton = run;
+
+        this.ranFromLast = false;
+
+        this.runbutton.addEventListener('click', this.run);
+
+        this.fightW.disabled = true;
+        this.fightB.disabled = true;
+        this.equip.disabled = true;
+        this.drink.disabled = true;
     }
 
-    drawFullRoom = (deck) => {
+    drawFullRoom = () => {
         while (this.cards.length < 4) {
-            this.cards.push(deck.drawCard());
+            this.cards.push(this.deck.drawCard());
         }
         this.renderRoom();
     }
@@ -99,25 +119,75 @@ class Room {
         roomDiv.innerHTML = "";
 
         this.cards.forEach(card => {
-            roomDiv.innerHTML += `<img class="${card}" src="${card.link}" alt="${card.verboseRank()}_${card.suit}"/>`;
+            roomDiv.innerHTML += `<img class="card" src="${card.link}" alt="${card.verboseRank()}_${card.suit}"/>`;
         });
-    }
+
+        $$("#room > .card").forEach((el, i) => {
+            el.addEventListener('click', () => {
+                if (this.selectedCard == i) {
+                    this.selectedCard = null;
+                    el.classList.remove("selected");
+                    this.manageButtons(null)
+                }
+                    
+                else {
+                    $$("#room > .card").forEach(iEl => iEl.classList.remove("selected"));
+                    el.classList.add("selected");
+
+                    this.selectedCard = i;
+                    this.manageButtons(this.cards[this.selectedCard]);
+                }
+            });
+        });
+        this.ranFromLast = false;
+        this.runbutton.disabled = false;
+    };
 
     run = () => {
+        
+        this.drawFullRoom()
+        this.ranFromLast = true;
+        this.runbutton.disabled = true;
+    };
 
+    manageButtons = card => {
+        this.fightB.disabled = true;
+        this.fightW.disabled = true;
+        this.drink.disabled = true;
+        this.equip.disabled = true;
+        if (card.suit == "Spades" || card.suit == "Clubs") {
+            this.fightB.disabled = false;
+            // Weapon logic
+        } else if (card.suit == "Diamonds") {
+            this.equip.disabled = false;
+        } else if (card.suit == "Hearts") {
+            this.drink.disabled = false;
+        }
     }
 }
 
 let health = 20;
-const deck = new Deck();
-const room = new Room();
+
+const modifyHealth = value => {
+    health += value
+
+    if (health > 20)
+        health = 20
+    else if (health < 0) {
+        health = 0;
+    }
+}
 
 const main = () => {
-    deck.filterForScoundrel();
-    deck.shuffle();
-    room.drawFullRoom(deck);
-
     $("#hp").innerText = health;
+    const fightW = $("#fight-w");
+    const fightB = $("#fight-b");
+    const equip = $("#equip");
+    const drink = $("#drink");
+    const run = $("#run");
+
+    const room = new Room(fightW, fightB, equip, drink, run);
+    room.drawFullRoom();
 };
 
 addEventListener("DOMContentLoaded", main);
