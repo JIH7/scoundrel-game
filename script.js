@@ -265,8 +265,9 @@ const modifyHealth = value => {
     else if (health <= 0) {
         health = 0;
 
-        $("main").innerHTML = `<h1 class="game-over">Game Over</h1><button class="restart">Restart</button>`;
-        $(".restart").addEventListener('click', () => location.reload());
+        
+
+        endGame(0);
     }
 
     $("#hp").innerText = health;
@@ -286,7 +287,7 @@ const checkEndGame = (room) => {
 }
 
 const endGame = score => {
-    $("main").innerHTML = `<h1 class="game-over">VICTORY</h1>
+    $("main").innerHTML = `<h1 class="game-over">${score == Math.abs(score) ? "VICTORY" : "GAME OVER"}</h1>
     <h2>Score: ${score}</h2>
     <button class="restart">Restart</button>`;
     $(".restart").addEventListener('click', () => location.reload());
