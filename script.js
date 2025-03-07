@@ -142,6 +142,7 @@ class Room {
             this.cards.push(this.deck.drawCard());
         }
         this.drankPotionThisRoom = false;
+        this.ranFromLast = false;
         this.renderRoom();
         $("h2 > span").innerText = this.deck.cards.length;
     }
@@ -186,7 +187,6 @@ class Room {
                 }
             });
         });
-        this.ranFromLast = false;
         this.runbutton.disabled = false;
     };
 
