@@ -143,6 +143,7 @@ class Room {
         }
         this.drankPotionThisRoom = false;
         this.ranFromLast = false;
+        this.runbutton.disabled = false;
         this.renderRoom();
         $("h2 > span").innerText = this.deck.cards.length;
     }
@@ -187,7 +188,6 @@ class Room {
                 }
             });
         });
-        this.runbutton.disabled = false;
     };
 
     fightBare = () => {
