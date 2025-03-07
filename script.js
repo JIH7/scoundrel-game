@@ -10,7 +10,7 @@ const suits = [
 
 class Card {
     constructor(_rank, _suit) {
-        if (_rank == 11)
+        if (_rank == 11) // Convert ranked to appropriate string value
             this.rank = "J";
         else if (_rank == 12)
             this.rank = "Q";
@@ -21,11 +21,11 @@ class Card {
         else
             this.rank = _rank + "";
 
-        this.suit = suits[_suit];
-
+        this.suit = suits[_suit]; // Match suit index to suits constant
+        // Playing card images I found online 
         this.link = `https://tekeye.uk/playing_cards/images/svg_playing_cards/fronts/${this.suit.toLowerCase()}_${this.verboseRank().toLowerCase()}.svg`
     }
-
+    // Rank written out if ace or face
     verboseRank = () => {
         switch (this.rank) {
             case "A":
@@ -40,7 +40,7 @@ class Card {
                 return this.rank;
         }
     }
-
+    // Rank as integer value in scoundrel
     rankNumber = () => {
         switch (this.rank) {
             case "A":
@@ -62,10 +62,10 @@ class Card {
 
     isFace = () => this.rank == "J" || this.rank == "Q" || this.rank == "K";
     isAce = () => this.rank == "A";
-
+    // Filter standard deck of cards to scoundrel cards only
     scoundrelLegal = () => !((this.isFace() || this.isAce()) && (this.suit == "Hearts" || this.suit == "Diamonds"));
 }
-
+// Deck of cards object
 class Deck {
     constructor() {
         this.cards = [];
@@ -76,14 +76,14 @@ class Deck {
             }
         }
     }
-
+    // Places card on the bottom of the deck
     bottomCard = card => this.cards.push(card);
-
+    // Remove first card and return it
     drawCard = () => this.cards.shift();
-
+    // Randomize deck
     shuffle = () => {
         let currentIndex = this.cards.length;
-
+        // Algorithm based on one I found online, swap each card with a random index
         while (currentIndex != 0) {
             let randomIndex = Math.floor(Math.random() * currentIndex);
             currentIndex--;
@@ -91,74 +91,76 @@ class Deck {
             [this.cards[currentIndex], this.cards[randomIndex]] = [this.cards[randomIndex], this.cards[currentIndex]];
         }
     }
-
+    // Remove red aces/faces
     filterForScoundrel = () => this.cards = this.cards.filter(c => c.scoundrelLegal());
-
+    // Print deck contents for debugging
     print = () => this.cards.forEach((c, i) => console.log(`Card ${i + 1}: ${c.toString()}`))
 }
-
+// Simple object containing data for equipped weapon
 class Weapon {
     constructor(card) {
         this.rank = card.rankNumber();
         this.lowestKill = 15;
     }
 }
-
+// Room data and game manager class
 class Room {
-    constructor(fightW, fightB, equip, drink, run) {
-        this.deck = new Deck();
+    constructor(fightW, fightB, equip, drink, run) { // Constructor takes the player buttons to manage their state
+        this.deck = new Deck(); // Set up deck
         this.deck.filterForScoundrel();
         this.deck.shuffle();
 
-        this.cards = [];
-        this.selectedCard = null;
+        this.cards = []; // Contains the 4 cards in the room. Populated by drawFullRoom
+        this.selectedCard = null; // Currently selected card in this.cards
 
-        this.weapon = null;
-
+        this.weapon = null; // Player's equipped weapon
+        // Player's buttons
         this.fightW = fightW;
         this.fightB = fightB;
         this.equip = equip;
         this.drink = drink;
         this.runbutton = run;
 
-        this.ranFromLast = false;
-        this.drankPotionThisRoom = false;
-
+        this.ranFromLast = false; // The player cannot run from two rooms in a row
+        this.drankPotionThisRoom = false; // The player can drink one potion per room
+        // Player button event listeners
         this.fightB.addEventListener('click', this.fightBare);
         this.fightW.addEventListener('click', this.fightWeapon);
         this.drink.addEventListener('click', this.drinkPotion);
         this.equip.addEventListener('click', this.equipWeapon);
         this.runbutton.addEventListener('click', this.run);
 
+        // All buttons but "run" disabled until corresponding card selected
         this.fightW.disabled = true;
         this.fightB.disabled = true;
         this.equip.disabled = true;
         this.drink.disabled = true;
     }
-
+    // Fill room with 4 cards
     drawFullRoom = () => {
-        while (this.cards.length < 4) {
+        while (this.cards.length < 4 && this.deck.cards.length > 0) {
             this.cards.push(this.deck.drawCard());
         }
         this.drankPotionThisRoom = false;
         this.renderRoom();
         $("h2 > span").innerText = this.deck.cards.length;
     }
-
+    // Remove the currently selected card from this.cards, return it, re-render room.
     removeCard = () => {
         [this.cards[0], this.cards[this.selectedCard]] = [this.cards[this.selectedCard], this.cards[0]];
-        this.selectedCard = null;
-        const card = this.cards.shift();
-        this.renderRoom();
-        if (this.cards.length < 2)
+        this.selectedCard = null; // Selected card is always removed, so we set it to null
+        const card = this.cards.shift(); // Constant containing removed card to return after re-render
+        this.renderRoom(); // Re-render room with card removed
+        if (this.cards.length < 2) // If the room only contains one card, the next room begins
             this.drawFullRoom();
 
-        if ((!this.cards.some(card => card.suit != "Hearts")) && this.drankPotionThisRoom)
-            this.drawFullRoom();
+        this.manageButtons(null);
+        if (this.cards.length <= 1 && this.deck.cards.length == 0)
+            checkEndGame();
 
         return card;
     }
-
+    // Generate HTML and event listeners for cards in room
     renderRoom = () => {
         const roomDiv = $("#room");
         roomDiv.innerHTML = "";
@@ -228,8 +230,12 @@ class Room {
     manageButtons = card => {
         this.fightB.disabled = true;
         this.fightW.disabled = true;
+        this.drink.innerText = "Drink";
         this.drink.disabled = true;
         this.equip.disabled = true;
+        if (card == null)
+            return;
+
         if (card.suit == "Spades" || card.suit == "Clubs") {
             this.fightB.disabled = false;
             if (this.weapon != null) {
@@ -238,8 +244,13 @@ class Room {
             }
         } else if (card.suit == "Diamonds") {
             this.equip.disabled = false;
-        } else if (card.suit == "Hearts" && !this.drankPotionThisRoom) {
-            this.drink.disabled = false;
+        } else if (card.suit == "Hearts") {
+            if (!this.drankPotionThisRoom)
+                this.drink.disabled = false;
+            else if (this.cards.every(card => card.suit == "Hearts")) {
+                this.drink.disabled = false;
+                this.drink.innerText = "Discard";
+            }
         }
     }
 }
@@ -259,6 +270,26 @@ const modifyHealth = value => {
     }
 
     $("#hp").innerText = health;
+}
+
+const checkEndGame = (room) => {
+    if (room.cards.length == 1) {
+        if (health == 20 && room.cards[0].suit == "Hearts") {
+            endGame(health + room.caards[0].rankNumber());
+            return;
+        } else {
+            return;
+        }
+    } else {
+        endGame(health);
+    }
+}
+
+const endGame = score => {
+    $("main").innerHTML = `<h1 class="game-over">VICTORY</h1>
+    <h2>Score: ${score}</h2>
+    <button class="restart">Restart</button>`;
+    $(".restart").addEventListener('click', () => location.reload());
 }
 
 const main = () => {
